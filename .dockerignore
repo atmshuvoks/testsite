@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Next.js build output
+.next
+out
+
+# Local data
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Environment files
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+README.md
+*.md

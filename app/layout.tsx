@@ -23,7 +23,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // Some environments/extensions inject attributes on <html> before React hydrates.
+    // Keep <html> stable to avoid hydration mismatch noise in dev.
+    <html lang="en" className="" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>
