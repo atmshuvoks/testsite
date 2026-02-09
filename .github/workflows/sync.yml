@@ -1,0 +1,53 @@
+name: Sync Jobs & Deploy
+
+on:
+  # Automatic sync every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Manual trigger from GitHub UI or API
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual sync'
+        required: false
+        default: 'Manual sync'
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 23
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize database
+        run: npm run db:init
+
+      - name: Sync jobs from AllJobs
+        run: npm run sync
+        env:
+          JOBMIRROR_DB_PATH: ./data/jobs.db
+
+      - name: Install Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Upload database to Fly.io
+        run: |
+          echo "put data/jobs.db /data/jobs.db" | flyctl ssh sftp shell
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
