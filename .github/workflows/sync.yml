@@ -46,8 +46,33 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+      - name: Wait for app to be ready
+        run: |
+          echo "Waiting for app to start..."
+          sleep 30
+          flyctl status
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Start machine if needed
+        run: |
+          flyctl machine list
+          # Start any stopped machines
+          flyctl machine start $(flyctl machine list --json | jq -r '.[0].id') || true
+          sleep 10
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Upload database to Fly.io
         run: |
-          echo "put data/jobs.db /data/jobs.db" | flyctl ssh sftp shell
+          flyctl ssh sftp shell <<EOF
+          put data/jobs.db /data/jobs.db
+          EOF
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        continue-on-error: true
+
+      - name: Restart app to load database
+        run: flyctl apps restart alljobs-mirror
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
