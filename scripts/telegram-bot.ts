@@ -9,6 +9,7 @@ import {
 import { db } from "@/lib/db";
 import { getJobDetails, upsertJobDetails } from "@/lib/job-details";
 import type { JobRow } from "@/lib/jobs";
+import { syncAlljobs } from "@/lib/sync";
 
 function loadEnvFile(p: string) {
   if (!fs.existsSync(p)) return;
@@ -374,6 +375,7 @@ async function main() {
             "<code>/computer 10</code> List first 10",
             "<code>/dataentry</code> List active data entry jobs",
             "<code>/dataentry 10</code> List first 10",
+            "<code>/sync</code> Sync jobs from AllJobs",
             "<code>/chatid</code> Show this chat id",
           ].join("\n")
         );
@@ -382,6 +384,29 @@ async function main() {
 
       if (text === "/chatid" || text.startsWith("/chatid@")) {
         await tgSendMessage(token, chatId, `Chat ID: <code>${chatId}</code>`);
+        continue;
+      }
+
+      if (text === "/sync" || text.startsWith("/sync@")) {
+        await tgSendMessage(token, chatId, "🔄 Syncing jobs from AllJobs...");
+        try {
+          const result = await syncAlljobs();
+          await tgSendMessage(
+            token,
+            chatId,
+            [
+              "✅ <b>Sync complete!</b>",
+              "",
+              `📥 Fetched: ${result.fetchedJobs} jobs`,
+              `🆕 New: ${result.newJobs} jobs`,
+              `📝 Updated: ${result.updatedJobs} jobs`,
+              `⏰ Expired: ${result.expiredJobs} jobs`,
+            ].join("\n")
+          );
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          await tgSendMessage(token, chatId, `❌ Sync failed: ${escapeHtml(errMsg)}`);
+        }
         continue;
       }
 
